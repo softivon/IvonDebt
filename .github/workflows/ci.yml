@@ -1,0 +1,135 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─── Backend Tests ────────────────────────────────────────────
+  test-backend:
+    name: Backend Tests
+    runs-on: self-hosted
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run backend tests
+        working-directory: backend
+        env:
+          MONGO_URI: mongodb://localhost:27017/debt_tracker_test
+          NODE_ENV: test
+          PORT: 8000
+        run: npm test
+
+  # ─── Frontend Build ───────────────────────────────────────────
+  build-frontend:
+    name: Frontend Build
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: backend/public/
+
+  # ─── Docker Build ─────────────────────────────────────────────
+  build-docker:
+    name: Docker Build
+    runs-on: self-hosted
+    needs: [test-backend, build-frontend]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: backend/public/
+
+      - name: Build Docker image
+        run: docker build -t ivondebt:${{ github.sha }} ./backend
+
+  # ─── Deploy to Staging ────────────────────────────────────────
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: self-hosted
+    needs: [build-docker]
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: backend/public/
+
+      - name: Deploy staging stack
+        env:
+          NODE_ENV: staging
+        run: |
+          docker compose -f docker-compose.staging.yml pull
+          docker compose -f docker-compose.staging.yml up -d --build
+          echo "Staging deployed at port 8001"
+
+  # ─── Deploy to Production ─────────────────────────────────────
+  deploy-production:
+    name: Deploy to Production
+    runs-on: self-hosted
+    needs: [build-docker]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: backend/public/
+
+      - name: Deploy production stack
+        env:
+          NODE_ENV: production
+        run: |
+          docker compose down
+          docker compose up -d --build
+          echo "Production deployed at port 8000"
