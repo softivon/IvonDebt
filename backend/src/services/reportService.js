@@ -1,4 +1,4 @@
-const { Parser } = require("json2csv");
+const { convert } = require("json-2-csv");
 
 /**
  * Builds dashboard summary totals from an array of debts.
@@ -26,18 +26,6 @@ const buildSummary = (debts) => {
  * Converts an array of debt objects to CSV string.
  */
 const toCSV = (debts) => {
-  const fields = [
-    "id",
-    "contact",
-    "direction",
-    "originalAmount",
-    "remainingBalance",
-    "status",
-    "dueDate",
-    "description",
-    "createdAt",
-  ];
-
   const rows = debts.map((d) => ({
     id: d._id.toString(),
     contact: d.contactId?.name || "",
@@ -50,8 +38,7 @@ const toCSV = (debts) => {
     createdAt: d.createdAt.toISOString().split("T")[0],
   }));
 
-  const parser = new Parser({ fields });
-  return parser.parse(rows);
+  return convert(rows);
 };
 
 module.exports = { buildSummary, toCSV };
