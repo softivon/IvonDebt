@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Build output
+frontend/dist/
+frontend/build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# MongoDB data (local dev)
+data/
+
+# Coverage
+coverage/

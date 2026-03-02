@@ -1,0 +1,38 @@
+version: "3.9"
+
+# Staging overrides — extends docker-compose.yml
+services:
+  mongo:
+    image: mongo:7
+    container_name: ivondebt_mongo_staging
+    restart: unless-stopped
+    volumes:
+      - mongo_data_staging:/data/db
+    networks:
+      - app_net
+
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ivondebt_app_staging
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    environment:
+      - PORT=8000
+      - MONGO_URI=mongodb://mongo:27017/debt_tracker_staging
+      - NODE_ENV=staging
+    depends_on:
+      - mongo
+    volumes:
+      - ./frontend/dist:/app/public
+    networks:
+      - app_net
+
+volumes:
+  mongo_data_staging:
+
+networks:
+  app_net:
+    driver: bridge
