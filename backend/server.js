@@ -4,10 +4,12 @@ const cors = require("cors");
 const path = require("path");
 const connectDB = require("./src/db");
 
+const authRouter = require("./src/routes/auth");
 const contactsRouter = require("./src/routes/contacts");
 const debtsRouter = require("./src/routes/debts");
 const paymentsRouter = require("./src/routes/payments");
 const reportsRouter = require("./src/routes/reports");
+const authMiddleware = require("./src/middleware/auth");
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -19,11 +21,14 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 
-// API routes
-app.use("/api/contacts", contactsRouter);
-app.use("/api/debts", debtsRouter);
-app.use("/api/payments", paymentsRouter);
-app.use("/api/reports", reportsRouter);
+// Public routes
+app.use("/api/auth", authRouter);
+
+// Protected API routes
+app.use("/api/contacts", authMiddleware, contactsRouter);
+app.use("/api/debts", authMiddleware, debtsRouter);
+app.use("/api/payments", authMiddleware, paymentsRouter);
+app.use("/api/reports", authMiddleware, reportsRouter);
 
 // Serve React static build in production
 if (process.env.NODE_ENV === "production" || process.env.NODE_ENV === "staging") {

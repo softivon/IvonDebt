@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 
 const links = [
@@ -10,7 +10,15 @@ const links = [
 
 export default function Navbar() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { state } = useApp();
+  const username = localStorage.getItem("username");
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    navigate("/login");
+  };
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-10">
@@ -35,6 +43,15 @@ export default function Navbar() {
               )}
             </Link>
           ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-400 hidden sm:block">{username}</span>
+          <button
+            onClick={handleLogout}
+            className="px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50"
+          >
+            Çıkış
+          </button>
         </div>
       </div>
     </nav>

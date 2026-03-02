@@ -5,6 +5,29 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+// Attach token on every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// Redirect to login on 401
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+    }
+    return Promise.reject(err);
+  }
+);
+
+// Auth
+export const login = (data) => api.post("/auth/login", data);
+export const getMe = () => api.get("/auth/me");
+
 // Contacts
 export const getContacts = () => api.get("/contacts");
 export const getContact = (id) => api.get(`/contacts/${id}`);
@@ -27,5 +50,4 @@ export const deletePayment = (debtId, paymentId) =>
 // Reports
 export const getSummary = () => api.get("/reports/summary");
 export const getOverdue = () => api.get("/reports/overdue");
-export const exportCSV = () =>
-  api.get("/reports/export", { responseType: "blob" });
+export const exportCSV = () => api.get("/reports/export", { responseType: "blob" });

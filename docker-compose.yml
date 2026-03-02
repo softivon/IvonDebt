@@ -23,6 +23,7 @@ services:
       - PORT=8000
       - MONGO_URI=mongodb://mongo:27017/debt_tracker
       - NODE_ENV=production
+      - JWT_SECRET=ivondebt_super_secret_2026
     depends_on:
       - mongo
     networks:
